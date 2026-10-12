@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Music Recommendation</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>🎵 AI Music Recommendation</h1>
+
+        <p class="subtitle">
+            Music recommendations based on your facial expression
+        </p>
+
+
+        <!-- Emotion Section -->
+
+        <div class="camera-box">
+
+            <h2>😊 Detected Emotion</h2>
+
+            <div class="emotion">
+                <h1 id="emotion-text">{{ emotion }}</h1>
+            </div>
+
+            <button id="detect-btn" type="button">
+                Start Emotion Detection
+            </button>
+
+        </div>
+
+
+        <!-- Music Section -->
+
+        <div class="recommendations">
+
+            <h2>🎧 Recommended Music</h2>
+
+            <div id="songs-container">
+
+                {% if songs %}
+
+                    {% for song in songs %}
+
+                    <div class="song">
+
+                        <img
+                            src="{{ song.image }}"
+                            alt="Album Cover"
+                        >
+
+                        <div class="song-info">
+
+                            <h3>
+                                {{ song.name }}
+                            </h3>
+
+                            <p>
+                                {{ song.artist_name }}
+                            </p>
+
+                            <audio controls>
+
+                                <source
+                                    src="{{ song.audio }}"
+                                    type="audio/mpeg"
+                                >
+
+                                Your browser does not support audio.
+
+                            </audio>
+
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                {% else %}
+
+                    <p>
+                        No songs found. Try detecting your emotion again.
+                    </p>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <script>
+        const detectBtn = document.getElementById("detect-btn");
+        const emotionText = document.getElementById("emotion-text");
+        const songsContainer = document.getElementById("songs-container");
+
+        detectBtn.addEventListener("click", async () => {
+
+            // Show loading state
+            detectBtn.disabled = true;
+            detectBtn.textContent = "Detecting... look at the camera 👀";
+            emotionText.textContent = "Detecting...";
+
+            try {
+                const response = await fetch("/detect", { method: "POST" });
+                const data = await response.json();
+
+                // Update emotion text
+                emotionText.textContent = data.emotion;
+
+                // Rebuild songs list
+                songsContainer.innerHTML = "";
+
+                if (data.songs.length > 0) {
+                    data.songs.forEach(song => {
+                        songsContainer.innerHTML += `
+                            <div class="song">
+                                <img src="${song.image}" alt="Album Cover">
+                                <div class="song-info">
+                                    <h3>${song.name}</h3>
+                                    <p>${song.artist_name}</p>
+                                    <audio controls>
+                                        <source src="${song.audio}" type="audio/mpeg">
+                                        Your browser does not support audio.
+                                    </audio>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    songsContainer.innerHTML = "<p>No songs found. Try detecting your emotion again.</p>";
+                }
+
+            } catch (err) {
+                console.error("Detection error:", err);
+                emotionText.textContent = "Error — try again";
+            } finally {
+                detectBtn.disabled = false;
+                detectBtn.textContent = "Detect Again 🔁";
+            }
+        });
+    </script>
+
+</body>
+</html>
